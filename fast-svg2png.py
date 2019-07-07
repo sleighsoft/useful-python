@@ -33,8 +33,8 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    inpath = args.inpath
-    outpath = args.outpath
+    inpath = Path(args.inpath)
+    outpath = Path(args.outpath)
 
     print(f'Reading files from {inpath} and writing to {outpath}')
 
