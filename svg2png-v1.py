@@ -17,7 +17,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description=('Scans recursively for .svg files and converts them to '
                      '.png files. Will use all available CPU cores to process '
-                     'files in parallel.')
+                     'files in parallel. Spawns number of CPU subprocesses '
+                     'that each receive a chunk of all files to process.')
     )
     parser.add_argument(
         'inpath',
@@ -28,7 +29,7 @@ if __name__ == "__main__":
         'outpath',
         type=str,
         help=('Root directory where converted .svg files will be written to. '
-              'This will recreate the directory structure of file found at '
+              'This will recreate the directory structure of files found at '
               '`inpath`.'))
 
     args = parser.parse_args()
@@ -38,8 +39,8 @@ if __name__ == "__main__":
 
     print(f'Reading files from {inpath} and writing to {outpath}')
 
-    paths = [p for p in inpath.rglob(
-        '*') if p.is_file() and p.suffix == '.svg']
+    paths = [p for p in inpath.rglob('*')
+             if p.is_file() and p.suffix == '.svg']
 
     unfinished_paths = []
     for p in paths:
