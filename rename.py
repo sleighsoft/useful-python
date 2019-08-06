@@ -64,7 +64,7 @@ if __name__ == "__main__":
             if group_name in match.groupdict():
                 replace_str = replace_str.replace(
                     f':<{group_name}>', match.group(group_name))
-            elif int(group_name) < len(match.groups()) + len(match.groupdict()):
+            elif int(group_name) <= len(match.groups()) + len(match.groupdict()):
                 replace_str = replace_str.replace(
                     f':<{group_name}>', match.group(int(group_name)))
         path = match.string.replace(path_str, replace_str)
