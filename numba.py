@@ -12,26 +12,74 @@ import numba
 
 
 @numba.njit(parallel=True)
-def parallel_searchsorted(a, v, side="left"):
+def parallel_searchsorted(a, v):
     indices = np.empty(v.shape, dtype=np.int64)
     for i in numba.prange(v.shape[0]):
-        indices[i] = np.searchsorted(a[i], v[i], side=side)
+        indices[i] = np.searchsorted(a[i], v[i])
     return indices
 
 
 @numba.njit(parallel=True)
-def parallel_knn_indices(X, n_neighbors, axis=-1, kind=None):
+def parallel_searchsorted_left(a, v):
+    indices = np.empty(v.shape, dtype=np.int64)
+    for i in numba.prange(v.shape[0]):
+        indices[i] = np.searchsorted(a[i], v[i], "left")
+    return indices
+
+
+@numba.njit(parallel=True)
+def parallel_searchsorted_right(a, v):
+    indices = np.empty(v.shape, dtype=np.int64)
+    for i in numba.prange(v.shape[0]):
+        indices[i] = np.searchsorted(a[i], v[i], "right")
+    return indices
+
+
+@numba.njit(parallel=True)
+def parallel_knn_indices(X, n_neighbors):
     knn_indices = np.empty((X.shape[0], n_neighbors), dtype=np.int64)
     for i in numba.prange(knn_indices.shape[0]):
-        knn_indices[i] = X[i].argsort(axis=axis, kind=kind)[:n_neighbors]
+        knn_indices[i] = X[i].argsort()[:n_neighbors]
     return knn_indices
 
 
 @numba.njit(parallel=True)
-def parallel_argsort(X, axis=-1, kind=None):
+def parallel_knn_indices_quicksort(X, n_neighbors):
+    knn_indices = np.empty((X.shape[0], n_neighbors), dtype=np.int64)
+    for i in numba.prange(knn_indices.shape[0]):
+        knn_indices[i] = X[i].argsort(kind="quicksort")[:n_neighbors]
+    return knn_indices
+
+
+@numba.njit(parallel=True)
+def parallel_knn_indices_mergesort(X, n_neighbors):
+    knn_indices = np.empty((X.shape[0], n_neighbors), dtype=np.int64)
+    for i in numba.prange(knn_indices.shape[0]):
+        knn_indices[i] = X[i].argsort(kind="mergesort")[:n_neighbors]
+    return knn_indices
+
+
+@numba.njit(parallel=True)
+def parallel_argsort(X):
     index_array = np.empty(X.shape, dtype=np.int64)
     for i in numba.prange(index_array.shape[0]):
-        index_array[i] = X[i].argsort(axis=axis, kind=kind)
+        index_array[i] = X[i].argsort()
+    return index_array
+
+
+@numba.njit(parallel=True)
+def parallel_argsort_quicksort(X):
+    index_array = np.empty(X.shape, dtype=np.int64)
+    for i in numba.prange(index_array.shape[0]):
+        index_array[i] = X[i].argsort(kind="quicksort")
+    return index_array
+
+
+@numba.njit(parallel=True)
+def parallel_argsort_mergesort(X):
+    index_array = np.empty(X.shape, dtype=np.int64)
+    for i in numba.prange(index_array.shape[0]):
+        index_array[i] = X[i].argsort(kind="mergsort")
     return index_array
 
 
