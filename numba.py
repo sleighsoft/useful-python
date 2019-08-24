@@ -21,7 +21,7 @@ def parallel_searchsorted(a, v, side="left"):
 
 @numba.njit(parallel=True)
 def parallel_knn_indices(X, n_neighbors, axis=-1, kind=None):
-    knn_indices = np.empty((X.shape[0], n_neighbors), dtype=np.int32)
+    knn_indices = np.empty((X.shape[0], n_neighbors), dtype=np.int64)
     for i in numba.prange(knn_indices.shape[0]):
         knn_indices[i] = X[i].argsort(axis=axis, kind=kind)[:n_neighbors]
     return knn_indices
