@@ -24,12 +24,9 @@ def row_norm(X):
     return np.sum(np.square(X), axis=1)
 
 
-def pairwise_euclidean_distance(X,
-                                Y,
-                                row_norms_X=None,
-                                row_norms_Y=None,
-                                squared=False,
-                                out=None):
+def pairwise_euclidean_distance(
+    X, Y, row_norms_X=None, row_norms_Y=None, squared=False, out=None
+):
     if row_norms_X is None:
         row_norms_X = row_norm(X)
         row_norms_X = np.reshape(row_norms_X, [-1, 1])
@@ -72,7 +69,7 @@ def batched_pairwise_euclidean_distance(X, Y=None, batch_size=None):
 
     for i in range(ceil(X.shape[0] / batch_size)):
         s = i * batch_size
-        e = (i+1) * batch_size
+        e = (i + 1) * batch_size
 
         pairwise_euclidean_distance(X[s:e], Y, out=d[s:e, :])
 
@@ -92,7 +89,7 @@ def batched_pairwise_euclidean_distance_generator(X, Y=None, batch_size=None):
 
     for i in range(ceil(X.shape[0] / batch_size)):
         s = i * batch_size
-        e = (i+1) * batch_size
+        e = (i + 1) * batch_size
 
         yield pairwise_euclidean_distance(X[s:e], Y)[0]
 
