@@ -137,12 +137,12 @@ def parallel_insert(X, indices, value):
         row = X[i]
         if pos < X.shape[1]:
             new_row[:pos] = row[:pos]
-            if pos != 0:
+            if pos == 0:
                 new_row[pos] = value
-                new_row[pos + 1 :] = row[pos + 1 :]
             else:
-                new_row[pos + 1 :] = row[pos:-1]
+                new_row[: pos] = row[: pos]
                 new_row[pos] = value
+            new_row[pos + 1 :] = row[pos:-1]
         else:
             new[i] = row
     return new
