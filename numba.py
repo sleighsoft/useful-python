@@ -125,6 +125,19 @@ def parallel_put_by_advanced_index(X, advanced_indices, values):
 
 
 @numba.njit(parallel=True)
+def parallel_put_by_advanced_index_scalar(X, advanced_indices, value):
+    """Takes a 2-tuple advanced index (x,y) and a scalar value and puts
+    it into the appropriate positions.
+    """
+    x_indices, y_indices = advanced_indices
+    for i in numba.prange(x_indices.shape[0]):
+        x = x_indices[i]
+        y = y_indices[i]
+        X[x, y] = value
+    return X
+
+
+@numba.njit(parallel=True)
 def parallel_insert(X, indices, value):
     """Insert `value` at all `indices` into X. This will shift all elements 
     starting at `indice` to the right. Elements whose index is > X.shape[1] will
@@ -140,9 +153,46 @@ def parallel_insert(X, indices, value):
             if pos == 0:
                 new_row[pos] = value
             else:
-                new_row[: pos] = row[: pos]
+                new_row[:pos] = row[:pos]
                 new_row[pos] = value
             new_row[pos + 1 :] = row[pos:-1]
         else:
             new[i] = row
     return new
+
+
+@numba.njit(parallel=True)
+def parallel_knn_indices(X, n_neighbors):
+    """This handles the case of multiple farthest neighbors that all have an
+    equal distance to the center."""
+    knn_indices = np.empty(X.shape, dtype=np.int64)
+    mask = np.zeros_like(X, dtype=np.bool_)
+    max_indices = np.empty((X.shape[0]), dtype=np.int64)
+    for i in numba.prange(knn_indices.shape[0]):
+        row = X[i]
+        v = row.argsort(kind="quicksort")
+        knn = row[v[n_neighbors - 1]]
+        j = -1
+        for j in range(n_neighbors, knn_indices.shape[1]):
+            if row[v[j]] != knn:
+                break
+        knn_indices[i] = v
+        mask[i, :j] = True
+        max_indices[i] = j
+    max_knn_index = max_indices.max()
+    mask = mask[:, :max_knn_index]
+    knn_indices = knn_indices[:, :max_knn_index].copy()
+    return knn_indices, mask
+
+@numba.njit(parallel=True)
+def parallel_take_by_advanced_index(X, advanced_indices):
+    """Allows using a 2-D advanced index, e.g. result from np.where() to pick
+    elements from a 2- D array X.
+    """
+    x_indices, y_indices = advanced_indices
+    new_array = np.empty(x_indices.shape[0], dtype=X.dtype)
+    for i in numba.prange(new_array.shape[0]):
+        x = x_indices[i]
+        y = y_indices[i]
+        new_array[i] = X[x, y]
+    return new_array
