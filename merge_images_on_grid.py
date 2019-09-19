@@ -1,8 +1,8 @@
 # Requires
-# Python 3+, Pillow
+# Python 3+, Pillow, matplotlib, numpy
 #
 # Can be installed with:
-# pip install Pillow
+# pip install Pillow matplotlib numpy
 #
 # Description:
 # This tool accepts multiple images and a column count as input and will align
@@ -23,6 +23,8 @@
 import argparse
 import os
 from PIL import Image
+import numpy as np
+import matplotlib.pyplot as plt
 
 
 def layout_list(l, cols):
@@ -40,7 +42,47 @@ def load_image_if_exists(path):
         return None
 
 
-def merge(output_file, images, cols, resize=-1, fill_color=0):
+def merge_and_plot(
+    output_file,
+    images,
+    cols,
+    resize=-1,
+    fill_color=0,
+    title=None,
+    x_ticklabels=None,
+    y_ticklabels=None,
+    xlabel=None,
+    ylabel=None,
+    figsize=None,
+    dpi=None,
+):
+    if figsize is not None:
+        if isinstance(figsize, (float, int)):
+            figsize = [s * figsize for s in plt.rcParams.get("figure.figsize").copy()]
+
+    merged_img, row_heights, column_widths = merge(
+        output_file, images, cols, resize, fill_color, save=False
+    )
+
+    row_heights.reverse()
+
+    x_ticks = np.cumsum(column_widths) - np.array(column_widths) / 2
+    y_ticks = np.cumsum(row_heights) - np.array(row_heights) / 2
+
+    fig, ax = plt.subplots(figsize=figsize)
+    ax.imshow(merged_img.rotate(180).transpose(Image.FLIP_LEFT_RIGHT), origin="lower")
+    ax.set_title(title)
+    ax.set_xticks(x_ticks)
+    ax.set_yticks(y_ticks)
+    ax.set_xticklabels(x_ticklabels)
+    ax.set_yticklabels(reversed(y_ticklabels))
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    plt.tight_layout()
+    plt.savefig(output_file, dpi=dpi)
+
+
+def merge(output_file, images, cols, resize=-1, fill_color=0, save=True):
     assert len(images) % cols == 0, 'len("-image") % "-cols" != 0'
 
     images = list(map(load_image_if_exists, images))
@@ -88,7 +130,10 @@ def merge(output_file, images, cols, resize=-1, fill_color=0):
             x_offset += column_width
         y_offset += row_height
 
-    merged_img.save(output_file)
+    if save:
+        merged_img.save(output_file)
+
+    return merged_img, row_heights, column_widths
 
 
 if __name__ == "__main__":
@@ -100,8 +145,7 @@ if __name__ == "__main__":
         type=str,
         nargs="+",
         required=True,
-        help="A list of image files. Order matters for final"
-        " layouting. You can leave grid elements blank by specifying and empty path with ''.",
+        help="A list of image files. Order matters for final" " layouting.",
     )
     parser.add_argument(
         "-cols",
@@ -125,6 +169,80 @@ if __name__ == "__main__":
         help="Default color to use for filling. Requires 3 values as RGB. Default is black.",
     )
 
+    parser.add_argument(
+        "-title",
+        type=str,
+        default=None,
+        help="(Optional) Plot title. If set, will output a matplotlib plot instead of a plain image.",
+    )
+    parser.add_argument(
+        "-x_ticklabels",
+        type=str,
+        nargs="+",
+        default=None,
+        help="(Optional) A list of x-tick labels. If set, will output a matplotlib plot instead of a plain image.",
+    )
+    parser.add_argument(
+        "-y_ticklabels",
+        type=str,
+        nargs="+",
+        default=None,
+        help="(Optional) A list of y-tick labels. If set, will output a matplotlib plot instead of a plain image.",
+    )
+    parser.add_argument(
+        "-xlabel",
+        type=str,
+        default=None,
+        help="(Optional) x-axis label. If set, will output a matplotlib plot instead of a plain image.",
+    )
+    parser.add_argument(
+        "-ylabel",
+        type=str,
+        default=None,
+        help="(Optional) y-axis label. If set, will output a matplotlib plot instead of a plain image.",
+    )
+    parser.add_argument(
+        "-figsize",
+        type=float,
+        nargs="+",
+        default=None,
+        help="(Optional) figsize of plot. Can be a scalar to scale figsize or a list of width, height. If set, will output a matplotlib plot instead of a plain image.",
+    )
+    parser.add_argument(
+        "-dpi",
+        type=int,
+        default=None,
+        help="(Optional) dpi of plot. If set, will output a matplotlib plot instead of a plain image.",
+    )
+
     args = parser.parse_args()
 
-    merge(args.output_file, args.images, args.cols, args.resize, args.fill_color)
+    if (
+        args.title is not None
+        or args.x_ticklabels is not None
+        or args.y_ticklabels is not None
+        or args.xlabel is not None
+        or args.ylabel is not None
+        or args.figsize is not None
+        or args.dpi is not None
+    ):
+        figsize = args.figsize
+        if figsize is not None and len(figsize) == 1:
+            figsize = figsize[0]
+        merge_and_plot(
+            args.output_file,
+            args.images,
+            args.cols,
+            args.resize,
+            args.fill_color,
+            title=args.title,
+            x_ticklabels=args.x_ticklabels,
+            y_ticklabels=args.y_ticklabels,
+            xlabel=args.xlabel,
+            ylabel=args.ylabel,
+            figsize=figsize,
+            dpi=args.dpi,
+        )
+    else:
+        merge(args.output_file, args.images, args.cols, args.resize, args.fill_color)
+
