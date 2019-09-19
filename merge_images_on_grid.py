@@ -17,78 +17,114 @@
 # ```
 # python merge_images_on_grid.py -images image1.png image2.png -cols 1 -resize 0.5
 #
-# This will align the two images in two rows and resize them to 50% of their inital
-# size.
+# This will align the two images in two rows and resize them to 50% of their
+# initial size.
 
 import argparse
+import os
 from PIL import Image
 
 
 def layout_list(l, cols):
-    return [l[i:i+cols] for i in range(0, len(l), cols)]
+    return [l[i : i + cols] for i in range(0, len(l), cols)]
 
 
 def slice_col(l, col):
     return [l[i][col] for i in range(len(l))]
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
+def load_image_if_exists(path):
+    if os.path.exists(path):
+        return Image.open(path)
+    else:
+        return None
 
-    parser.add_argument('output_file', type=str, help='Name of the output '
-                        'file.')
-    parser.add_argument('-images', type=str, nargs='+', required=True,
-                        help='A list of image files. Order matters for final'
-                        ' layouting.')
-    parser.add_argument('-cols', type=int, required=True,
-                        help='Number of columns of the final layout. '
-                        '-cols must be able to evenly distribute len(-images)')
-    parser.add_argument('-resize', type=float, default=-1.0,
-                        help='A ratio to resize images by. Will keep aspect '
-                        'ratio. Defaults to keep original size.')
 
-    args = parser.parse_args()
+def merge(output_file, images, cols, resize=-1, fill_color=0):
+    assert len(images) % cols == 0, 'len("-image") % "-cols" != 0'
 
-    assert len(args.images) % args.cols == 0, 'len("-image") % "-cols" != 0'
+    images = list(map(load_image_if_exists, images))
 
-    images = list(map(Image.open, args.images))
-
-    if args.resize > 0:
+    if resize > 0:
         for img in images:
-            width = img.width * args.resize
-            height = img.width * args.resize
+            if img is None:
+                continue
+            width = img.width * resize
+            height = img.width * resize
             img.thumbnail((width, height), Image.LANCZOS)
 
-    images = layout_list(images, args.cols)
+    images = layout_list(images, cols)
 
-    total_width = 0
-    total_height = 0
-    max_row_height = []
-    max_col_width = []
-
+    column_widths = [0] * cols
     for row in images:
-        total_width = max(total_width, sum([i.width for i in row]))
-        max_row_height.append(max([i.height for i in row]))
+        for i, img in enumerate(row):
+            width = img.width if img is not None else 0
+            column_widths[i] = max(column_widths[i], width)
 
-    for col in range(args.cols):
-        col = slice_col(images, col)
-        total_height = max(total_height, sum([i.height for i in col]))
-        max_col_width.append(max([i.width for i in col]))
+    row_heights = [0] * len(images)
+    for i, row in enumerate(images):
+        for img in row:
+            height = img.height if img is not None else 0
+            row_heights[i] = max(row_heights[i], height)
 
-    merged_img = Image.new('RGB', (total_width, total_height))
+    total_width = sum(column_widths)
+    total_height = sum(row_heights)
+    merged_img = Image.new("RGB", (total_width, total_height), color=fill_color)
 
     x_offset = 0
     y_offset = 0
     for row_id, row in enumerate(images):
         x_offset = 0
-        row_height = max_row_height[row_id]
+        row_height = row_heights[row_id]
         for col_id, img in enumerate(row):
-            col_width = max_col_width[col_id]
+            column_width = column_widths[col_id]
+            if img is None:
+                x_offset += column_width
+                continue
             width, height = img.size
-            x = x_offset + (col_width//2) - (width//2)
-            y = y_offset + (row_height//2) - (height//2)
+            x = x_offset + (column_width // 2) - (width // 2)
+            y = y_offset + (row_height // 2) - (height // 2)
             merged_img.paste(img, (x, y))
-            x_offset += col_width
+            x_offset += column_width
         y_offset += row_height
 
-    merged_img.save(args.output_file)
+    merged_img.save(output_file)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("output_file", type=str, help="Name of the output " "file.")
+    parser.add_argument(
+        "-images",
+        type=str,
+        nargs="+",
+        required=True,
+        help="A list of image files. Order matters for final"
+        " layouting. You can leave grid elements blank by specifying and empty path with ''.",
+    )
+    parser.add_argument(
+        "-cols",
+        type=int,
+        required=True,
+        help="Number of columns of the final layout. "
+        "-cols must be able to evenly distribute len(-images)",
+    )
+    parser.add_argument(
+        "-resize",
+        type=float,
+        default=-1.0,
+        help="A ratio to resize images by. Will keep aspect "
+        "ratio. Defaults to keep original size.",
+    )
+    parser.add_argument(
+        "-fill_color",
+        type=int,
+        default=0,
+        nargs="3",
+        help="Default color to use for filling. Requires 3 values as RGB. Default is black.",
+    )
+
+    args = parser.parse_args()
+
+    merge(args.output_file, args.images, args.cols, args.resize, args.fill_color)
