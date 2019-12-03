@@ -1,9 +1,19 @@
+# Requires
+# Python, numpy matplotlib
+#
+# Can be installed with:
+# pip install numpy matplotlib
+#
+# Description:
+# Plots a radial histogram where colors indicate the weight instead of height.
+
+
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import colors
 
 
-def polar_histogram(data):
+def polar_histogram(data, cmap='gist_heat_r'):
 
     figure, axes = plt.subplots(subplot_kw={'projection': 'polar', 'frameon': False}, figsize=[8,6])
 
@@ -20,6 +30,6 @@ def polar_histogram(data):
     _, z = np.meshgrid(azimut, rad)
 
     # Colormap: https://matplotlib.org/3.1.0/tutorials/colors/colormaps.html
-    axes.pcolormesh(x, y, z, antialiased=True, cmap='gist_heat_r')
+    axes.pcolormesh(x, y, z, antialiased=True, cmap=cmap)
 
     return figure, axes
