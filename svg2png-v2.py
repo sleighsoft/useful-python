@@ -27,7 +27,6 @@ class Consumer(multiprocessing.Process):
         self.path_queue = path_queue
 
     def run(self):
-        proc_name = self.name
         try:
             while True:
                 (inpath, outpath) = self.path_queue.get(timeout=1)
