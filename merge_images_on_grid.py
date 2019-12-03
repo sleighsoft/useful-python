@@ -78,8 +78,8 @@ def merge_and_plot(
     ax.set_yticklabels(reversed(y_ticklabels))
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
-    plt.tight_layout()
-    plt.savefig(output_file, dpi=dpi)
+    fig.tight_layout()
+    fig.savefig(output_file, dpi=dpi)
 
 
 def merge(output_file, images, cols, resize=-1, fill_color=0, save=True):
